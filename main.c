@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <time.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <sys/wait.h>
 #include <errno.h>
 
@@ -22,7 +22,7 @@ void execute_command(char** args) {
     int status;
     waitpid(process, &status, 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-        printf("Process failed with error code %i.", WEXITSTATUS(status));
+        fprintf(stderr, "Process failed with error code %i.", WEXITSTATUS(status));
     }
 }
 
@@ -79,20 +79,23 @@ int main(int argc, char *argv[]){
         username = "unknown";
     }
 
+    char hostname[HOST_NAME_MAX + 1];
+    gethostname(hostname, sizeof(hostname));
+
     while (true){ // keep the shell running until the exit command is entered
 
         if (homePath != NULL && startsWith(currentDirectory, homePath)) {
-            printf("%s:~%s: ", username, currentDirectory + strlen(homePath));
+            printf("%s@%s:~%s$ ", username, hostname, currentDirectory + strlen(homePath));
         }
         else {
-            printf("%s:%s: ", username, currentDirectory);
+            printf("%s@%s:%s$ ", username, hostname, currentDirectory);
         }
         fgets(currentcmd, sizeof(currentcmd), stdin);
         currentcmd[strcspn(currentcmd, "\n")] = 0;
-        char* splitCommandTemp = strtok(currentcmd, " ");
+        char* splitCommandTemp = strtok(currentcmd, " \t\n");
         while (splitCommandTemp != NULL) {
             splitCommand = addList(splitCommandTemp, splitCommand);
-            splitCommandTemp = strtok(NULL, " ");
+            splitCommandTemp = strtok(NULL, " \t\n");
         }
 
         if (splitCommand.size == 0) continue;
@@ -110,20 +113,11 @@ int main(int argc, char *argv[]){
                 errno = 0;
                 if (chdir(splitCommand.list[1]) == -1) {
                     if (ENOENT == errno) {
-                        printf("Directory does not exist.\n");
+                        perror("Directory does not exist.\n");
                     }
                     else {
-                        printf("cd failed for unknown reason.\n");
+                        fprintf(stderr,"cd failed. Error code %i\n", errno);
                     }
-                    if (splitCommand.list != NULL) {
-                        for (int i = 0; i < splitCommand.size; i++) {
-                            free(splitCommand.list[i]);
-                        }
-                        free(splitCommand.list);
-                        splitCommand.list = NULL;
-                        splitCommand.size = 0;
-                    }
-                    continue;
                 }
             }
             if (getcwd(currentDirectory, PATH_MAX) == NULL) {
