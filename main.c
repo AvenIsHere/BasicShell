@@ -44,10 +44,13 @@ bool startsWith(const char* string, const char* prefix) {
 }
 
 List addList(const char* string, List list) {
-    char** temp = realloc(list.list, (list.size+2)*sizeof(char*));
-    if (temp == NULL) {
-        perror("realloc failed");
-        return list;
+    char** temp = list.list;
+    if (sizeof(list.list) < (list.size+2)*sizeof(char*)) {
+        temp = realloc(list.list, sizeof(list.list)*2);
+        if (temp == NULL) {
+            perror("realloc failed");
+            return list;
+        }
     }
     list.list = temp;
     list.list[list.size] = strdup(string);
@@ -58,6 +61,18 @@ List addList(const char* string, List list) {
     list.list[list.size + 1] = NULL;
     list.size++;
     return list;
+}
+
+List splitString(char str[PATH_MAX], char* delim) {
+    List returnList = {NULL, 0};
+
+    char* nextWord = strtok(str, delim);
+    while (nextWord != NULL) {
+        returnList = addList(nextWord, returnList);
+        nextWord = strtok(NULL, " \t\n");
+    }
+
+    return returnList;
 }
 
 
@@ -92,11 +107,7 @@ int main(int argc, char *argv[]){
         }
         fgets(currentcmd, sizeof(currentcmd), stdin);
         currentcmd[strcspn(currentcmd, "\n")] = 0;
-        char* splitCommandTemp = strtok(currentcmd, " \t\n");
-        while (splitCommandTemp != NULL) {
-            splitCommand = addList(splitCommandTemp, splitCommand);
-            splitCommandTemp = strtok(NULL, " \t\n");
-        }
+        splitCommand = splitString(currentcmd, " \t\n");
 
         if (splitCommand.size == 0) continue;
 
