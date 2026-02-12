@@ -24,7 +24,7 @@ void execute_command(char** args) {
     int status;
     waitpid(process, &status, 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "Process failed with error code %i.", WEXITSTATUS(status));
+        fprintf(stderr, "Process failed with error code %i.\n", WEXITSTATUS(status));
     }
 }
 
@@ -175,6 +175,7 @@ int main(int argc, char *argv[]){
             }
 
             freeList(&splitCommand);
+            free(currentcmd);
         }
         freeList(&commands);
     }
