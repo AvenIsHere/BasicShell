@@ -95,7 +95,6 @@ void freeList(List *givenList) {
 }
 
 int main(int argc, char *argv[]){
-    char* currentcmd;
     const char* homePath = getenv("HOME");
 
     char* currentDirectory = malloc(PATH_MAX);
@@ -123,7 +122,7 @@ int main(int argc, char *argv[]){
         else {
             snprintf(prompt, sizeof(prompt), "%s@%s:%s$ ", username, hostname, currentDirectory);
         }
-        currentcmd = readline(prompt);
+        char *currentcmd = readline(prompt);
 
         if (currentcmd == NULL) {
             printf("\n");
@@ -178,4 +177,5 @@ int main(int argc, char *argv[]){
         }
         freeList(&commands);
     }
+    free(currentDirectory);
 }
