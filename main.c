@@ -7,9 +7,11 @@
 #include <limits.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 void execute_command(char** args) {
-    pid_t process = fork();
+    const pid_t process = fork();
     if (process == -1) {
         perror("fork failed");
         return;
@@ -33,8 +35,8 @@ typedef struct List {
 } List;
 
 bool startsWith(const char* string, const char* prefix) {
-    size_t slen = strlen(string);
-    size_t plen = strlen(prefix);
+    const size_t slen = strlen(string);
+    const size_t plen = strlen(prefix);
     if (plen == 0) {
         return true;
     }
@@ -47,12 +49,12 @@ bool startsWith(const char* string, const char* prefix) {
 List addList(const char* string, List list) {
     char** temp = list.list;
     if (list.capacity < list.size+2) {
-        temp = realloc(list.list, list.capacity*2 + sizeof(char*)*2);
+        temp = realloc(list.list, list.capacity*2 * sizeof(char*));
         if (temp == NULL) {
             perror("realloc failed");
             return list;
         }
-        list.capacity = list.capacity*2 + 2;
+        list.capacity = list.capacity*2;
     }
     list.list = temp;
     list.list[list.size] = strdup(string);
@@ -66,8 +68,13 @@ List addList(const char* string, List list) {
 }
 
 List splitString(char str[PATH_MAX], const char* delim) {
-    List returnList = {NULL, 0, 2};
-    returnList.list = malloc(sizeof(char*)*2);
+    List returnList = {NULL, 0, 8};
+    returnList.list = malloc(sizeof(char*)*8);
+
+    if (returnList.list == NULL) {
+        perror("malloc failed");
+        return returnList;
+    }
 
     const char* nextWord = strtok(str, delim);
     while (nextWord != NULL) {
@@ -89,8 +96,8 @@ void freeList(List *givenList) {
 }
 
 int main(int argc, char *argv[]){
-    char currentcmd[PATH_MAX];
-    char* homePath = getenv("HOME");
+    char* currentcmd;
+    const char* homePath = getenv("HOME");
 
     char* currentDirectory = malloc(PATH_MAX);
     if (getcwd(currentDirectory, PATH_MAX) == NULL) {
@@ -108,17 +115,27 @@ int main(int argc, char *argv[]){
 
     while (true){ // keep the shell running until the exit command is entered
 
+        char prompt[PATH_MAX + HOST_NAME_MAX + 32];
         if (homePath != NULL && startsWith(currentDirectory, homePath)) {
-            printf("%s@%s:~%s$ ", username, hostname, currentDirectory + strlen(homePath));
+            snprintf(prompt, sizeof(prompt), "%s@%s:~%s$ ", username, hostname, currentDirectory + strlen(homePath));
         }
         else {
-            printf("%s@%s:%s$ ", username, hostname, currentDirectory);
+            snprintf(prompt, sizeof(prompt), "%s@%s:%s$ ", username, hostname, currentDirectory);
         }
-        fgets(currentcmd, sizeof(currentcmd), stdin);
+        currentcmd = readline(prompt);
 
-        const List commands = splitString(currentcmd, "\n");
+        if (currentcmd == NULL) {
+            printf("\n");
+            break;
+        }
+
+        if (*currentcmd) {
+            add_history(currentcmd);
+        }
+
+        const List commands = splitString(currentcmd, ";");
         for (int k = 0; k < commands.size; k++) {
-            List splitCommand = splitString(commands.list[k], " \t\n");
+            const List splitCommand = splitString(commands.list[k], " \t\n");
 
             if (splitCommand.size == 0) continue;
 
@@ -138,7 +155,7 @@ int main(int argc, char *argv[]){
                             perror("Directory does not exist");
                         }
                         else {
-                            fprintf(stderr,"cd failed. Error code %i\n", errno);
+                            perror("cd failed");
                         }
                     }
                 }
