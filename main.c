@@ -29,6 +29,7 @@ void execute_command(char** args) {
 typedef struct List {
     char** list;
     int size;
+    size_t capacity;
 } List;
 
 bool startsWith(const char* string, const char* prefix) {
@@ -45,12 +46,13 @@ bool startsWith(const char* string, const char* prefix) {
 
 List addList(const char* string, List list) {
     char** temp = list.list;
-    if (sizeof(list.list) < (list.size+2)*sizeof(char*)) {
-        temp = realloc(list.list, sizeof(list.list)*2);
+    if (list.capacity < list.size+2) {
+        temp = realloc(list.list, list.capacity*2 + sizeof(char*)*2);
         if (temp == NULL) {
             perror("realloc failed");
             return list;
         }
+        list.capacity = list.capacity*2 + 2;
     }
     list.list = temp;
     list.list[list.size] = strdup(string);
@@ -63,19 +65,28 @@ List addList(const char* string, List list) {
     return list;
 }
 
-List splitString(char str[PATH_MAX], char* delim) {
-    List returnList = {NULL, 0};
+List splitString(char str[PATH_MAX], const char* delim) {
+    List returnList = {NULL, 0, 2};
+    returnList.list = malloc(sizeof(char*)*2);
 
-    char* nextWord = strtok(str, delim);
+    const char* nextWord = strtok(str, delim);
     while (nextWord != NULL) {
         returnList = addList(nextWord, returnList);
-        nextWord = strtok(NULL, " \t\n");
+        nextWord = strtok(NULL, delim);
     }
 
     return returnList;
 }
 
-
+void freeList(List *givenList) {
+    if (givenList->list != NULL) {
+        for (int i = 0; i < givenList->size; i++) {
+            free(givenList->list[i]);
+        }
+        free(givenList->list);
+        givenList->list = NULL;
+    }
+}
 
 int main(int argc, char *argv[]){
     char currentcmd[PATH_MAX];
@@ -83,11 +94,9 @@ int main(int argc, char *argv[]){
 
     char* currentDirectory = malloc(PATH_MAX);
     if (getcwd(currentDirectory, PATH_MAX) == NULL) {
-        perror("Could not find current directory.");
+        perror("Could not find current directory");
         exit(1);
     }
-
-    List splitCommand = {NULL, 0};
 
     char* username = getenv("USER");
     if (username == NULL) {
@@ -106,51 +115,48 @@ int main(int argc, char *argv[]){
             printf("%s@%s:%s$ ", username, hostname, currentDirectory);
         }
         fgets(currentcmd, sizeof(currentcmd), stdin);
-        currentcmd[strcspn(currentcmd, "\n")] = 0;
-        splitCommand = splitString(currentcmd, " \t\n");
 
-        if (splitCommand.size == 0) continue;
+        const List commands = splitString(currentcmd, "\n");
+        for (int k = 0; k < commands.size; k++) {
+            List splitCommand = splitString(commands.list[k], " \t\n");
 
-        if (strcmp(splitCommand.list[0], "cd") == 0) {
-            if (splitCommand.size<2) {
-                if (homePath != NULL) {
-                    chdir(homePath);
+            if (splitCommand.size == 0) continue;
+
+            if (strcmp(splitCommand.list[0], "cd") == 0) {
+                if (splitCommand.size<2) {
+                    if (homePath != NULL) {
+                        chdir(homePath);
+                    }
+                }
+                else if (splitCommand.size>2) {
+                    fprintf(stderr, "Too many arguments.\n");
+                }
+                else {
+                    errno = 0;
+                    if (chdir(splitCommand.list[1]) == -1) {
+                        if (ENOENT == errno) {
+                            perror("Directory does not exist");
+                        }
+                        else {
+                            fprintf(stderr,"cd failed. Error code %i\n", errno);
+                        }
+                    }
+                }
+                if (getcwd(currentDirectory, PATH_MAX) == NULL) {
+                    perror("Could not find current directory");
+                    exit(1);
                 }
             }
-            else if (splitCommand.size>2) {
-                printf("Too many arguments.\n");
+            else if (strcmp(splitCommand.list[0], "exit") == 0) {
+                free(currentDirectory);
+                exit(EXIT_SUCCESS);
             }
             else {
-                errno = 0;
-                if (chdir(splitCommand.list[1]) == -1) {
-                    if (ENOENT == errno) {
-                        perror("Directory does not exist.\n");
-                    }
-                    else {
-                        fprintf(stderr,"cd failed. Error code %i\n", errno);
-                    }
-                }
+                execute_command(splitCommand.list);
             }
-            if (getcwd(currentDirectory, PATH_MAX) == NULL) {
-                perror("Could not find current directory.");
-                exit(1);
-            }
-        }
-        else if (strcmp(splitCommand.list[0], "exit") == 0) {
-            free(currentDirectory);
-            exit(EXIT_SUCCESS);
-        }
-        else {
-            execute_command(splitCommand.list);
-        }
 
-        if (splitCommand.list != NULL) {
-            for (int i = 0; i < splitCommand.size; i++) {
-                free(splitCommand.list[i]);
-            }
-            free(splitCommand.list);
-            splitCommand.list = NULL;
-            splitCommand.size = 0;
+            freeList(&splitCommand);
         }
+        freeList(&commands);
     }
 }
