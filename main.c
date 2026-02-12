@@ -46,25 +46,24 @@ bool startsWith(const char* string, const char* prefix) {
     return strncmp(string, prefix, plen) == 0;
 }
 
-List addList(const char* string, List list) {
-    char** temp = list.list;
-    if (list.capacity < list.size+2) {
-        temp = realloc(list.list, list.capacity*2 * sizeof(char*));
+void addList(const char* string, List* list) {
+    char** temp = list->list;
+    if (list->capacity < list->size+2) {
+        temp = realloc(list->list, list->capacity*2 * sizeof(char*));
         if (temp == NULL) {
             perror("realloc failed");
-            return list;
+            return;
         }
-        list.capacity = list.capacity*2;
+        list->capacity = list->capacity*2;
     }
-    list.list = temp;
-    list.list[list.size] = strdup(string);
-    if (list.list[list.size] == NULL) {
+    list->list = temp;
+    list->list[list->size] = strdup(string);
+    if (list->list[list->size] == NULL) {
         perror("strdup failed");
-        return list;
+        return;
     }
-    list.list[list.size + 1] = NULL;
-    list.size++;
-    return list;
+    list->list[list->size + 1] = NULL;
+    list->size++;
 }
 
 List splitString(char str[PATH_MAX], const char* delim) {
@@ -78,7 +77,7 @@ List splitString(char str[PATH_MAX], const char* delim) {
 
     const char* nextWord = strtok(str, delim);
     while (nextWord != NULL) {
-        returnList = addList(nextWord, returnList);
+        addList(nextWord, &returnList);
         nextWord = strtok(NULL, delim);
     }
 
