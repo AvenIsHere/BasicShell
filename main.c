@@ -94,7 +94,14 @@ void freeList(List *givenList) {
     }
 }
 
-int main(int argc, char *argv[]){
+typedef struct config {
+    const char* homePath;
+    char* currentDirectory;
+    char* username;
+    char hostname[HOST_NAME_MAX];
+}Config;
+
+Config init() {
     const char* homePath = getenv("HOME");
 
     char* currentDirectory = malloc(PATH_MAX);
@@ -108,19 +115,48 @@ int main(int argc, char *argv[]){
         username = "unknown";
     }
 
-    char hostname[HOST_NAME_MAX + 1];
-    gethostname(hostname, sizeof(hostname));
+    signal(SIGINT, SIG_IGN);
+
+    const Config config = {homePath, currentDirectory, username};
+    gethostname(config.hostname, HOST_NAME_MAX);
+    return config;
+}
+
+void cd(const List* givenCommand, const Config* config) {
+    if (givenCommand->size<2) {
+        if (config->homePath != NULL) {
+            chdir(config->homePath);
+        }
+    }
+    else if (givenCommand->size>2) {
+        fprintf(stderr, "Too many arguments.\n");
+    }
+    else {
+        errno = 0;
+        if (chdir(givenCommand->list[1]) == -1) {
+            if (ENOENT == errno) {
+                perror("Directory does not exist");
+            }
+            else {
+                perror("cd failed");
+            }
+        }
+    }
+    getcwd(config->currentDirectory, PATH_MAX);
+}
+
+
+int main(int argc, char *argv[]){
+    Config config = init();
 
     while (true){ // keep the shell running until the exit command is entered
 
-        signal(SIGINT, SIG_IGN);
-
         char prompt[PATH_MAX + HOST_NAME_MAX + 32];
-        if (homePath != NULL && startsWith(currentDirectory, homePath)) {
-            snprintf(prompt, sizeof(prompt), "%s@%s:~%s$ ", username, hostname, currentDirectory + strlen(homePath));
+        if (config.homePath != NULL && startsWith(config.currentDirectory, config.homePath)) {
+            snprintf(prompt, sizeof(prompt), "%s@%s:~%s$ ", config.username, config.hostname, config.currentDirectory + strlen(config.homePath));
         }
         else {
-            snprintf(prompt, sizeof(prompt), "%s@%s:%s$ ", username, hostname, currentDirectory);
+            snprintf(prompt, sizeof(prompt), "%s@%s:%s$ ", config.username, config.hostname, config.currentDirectory);
         }
         char *currentcmd = readline(prompt);
 
@@ -128,44 +164,21 @@ int main(int argc, char *argv[]){
             printf("\n");
             break;
         }
-
         if (*currentcmd) {
             add_history(currentcmd);
         }
-
         const List commands = splitString(currentcmd, ";");
+
         for (int k = 0; k < commands.size; k++) {
             const List splitCommand = splitString(commands.list[k], " \t\n");
 
             if (splitCommand.size == 0) continue;
 
             if (strcmp(splitCommand.list[0], "cd") == 0) {
-                if (splitCommand.size<2) {
-                    if (homePath != NULL) {
-                        chdir(homePath);
-                    }
-                }
-                else if (splitCommand.size>2) {
-                    fprintf(stderr, "Too many arguments.\n");
-                }
-                else {
-                    errno = 0;
-                    if (chdir(splitCommand.list[1]) == -1) {
-                        if (ENOENT == errno) {
-                            perror("Directory does not exist");
-                        }
-                        else {
-                            perror("cd failed");
-                        }
-                    }
-                }
-                if (getcwd(currentDirectory, PATH_MAX) == NULL) {
-                    perror("Could not find current directory");
-                    exit(1);
-                }
+                cd(&splitCommand, &config);
             }
             else if (strcmp(splitCommand.list[0], "exit") == 0) {
-                free(currentDirectory);
+                free(config.currentDirectory);
                 exit(EXIT_SUCCESS);
             }
             else {
@@ -173,9 +186,9 @@ int main(int argc, char *argv[]){
             }
 
             freeList(&splitCommand);
-            free(currentcmd);
         }
+        free(currentcmd);
         freeList(&commands);
     }
-    free(currentDirectory);
+    free(config.currentDirectory);
 }
