@@ -115,6 +115,8 @@ int main(int argc, char *argv[]){
 
     while (true){ // keep the shell running until the exit command is entered
 
+        signal(SIGINT, SIG_IGN);
+
         char prompt[PATH_MAX + HOST_NAME_MAX + 32];
         if (homePath != NULL && startsWith(currentDirectory, homePath)) {
             snprintf(prompt, sizeof(prompt), "%s@%s:~%s$ ", username, hostname, currentDirectory + strlen(homePath));
