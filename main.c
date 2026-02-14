@@ -10,6 +10,14 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#ifndef HOST_NAME_MAX
+  #if defined(_POSIX_HOST_NAME_MAX)
+    #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+  #else
+    #define HOST_NAME_MAX 255
+  #endif
+#endif
+
 void execute_command(char** args) {
     const pid_t process = fork();
     if (process == -1) {
