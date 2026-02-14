@@ -17,6 +17,7 @@ void execute_command(char** args) {
         return;
     }
     if (process == 0) {
+        signal(SIGINT, SIG_DFL);
         execvp(args[0], args);
         perror("Command execution failed");
         exit(1);
@@ -117,7 +118,7 @@ Config init() {
 
     signal(SIGINT, SIG_IGN);
 
-    const Config config = {homePath, currentDirectory, username};
+    Config config = {homePath, currentDirectory, username};
     gethostname(config.hostname, HOST_NAME_MAX);
     return config;
 }
@@ -133,7 +134,15 @@ void cd(const List* givenCommand, const Config* config) {
     }
     else {
         errno = 0;
-        if (chdir(givenCommand->list[1]) == -1) {
+        char dir[PATH_MAX];
+        if (givenCommand->list[1][0] == '~') {
+            strcpy(dir, config->homePath);
+            strcat(dir, givenCommand->list[1] + 1);
+        }
+        else {
+            strcpy(dir, givenCommand->list[1]);
+        }
+        if (chdir(dir) == -1) {
             if (ENOENT == errno) {
                 perror("Directory does not exist");
             }
