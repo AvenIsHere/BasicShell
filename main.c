@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "list.c"
+#include "list.h"
 
 #ifndef HOST_NAME_MAX
   #if defined(_POSIX_HOST_NAME_MAX)

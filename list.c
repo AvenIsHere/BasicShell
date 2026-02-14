@@ -6,13 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <linux/limits.h>
-
-typedef struct List {
-    char** list;
-    int size;
-    size_t capacity;
-} List;
+#include "list.h"
 
 void addList(const char* string, List* list) {
     char** temp = list->list;
