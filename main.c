@@ -89,12 +89,11 @@ void cd(const List* givenCommand, const Config* config) {
     else {
         errno = 0;
         char dir[PATH_MAX];
-        if (givenCommand->list[1][0] == '~') {
-            strcpy(dir, config->homePath);
-            strcat(dir, givenCommand->list[1] + 1);
+        if (givenCommand->items[1][0] == '~') {
+            snprintf(dir, sizeof(dir), "%s%s", config->homePath, givenCommand->items[1] + 1);
         }
         else {
-            strcpy(dir, givenCommand->list[1]);
+            strcpy(dir, givenCommand->items[1]);
         }
         if (chdir(dir) == -1) {
             if (ENOENT == errno) {
@@ -133,19 +132,19 @@ int main(int argc, char *argv[]){
         const List commands = splitString(currentcmd, ";");
 
         for (int k = 0; k < commands.size; k++) {
-            const List splitCommand = splitString(commands.list[k], " \t\n");
+            const List splitCommand = splitString(commands.items[k], " \t\n");
 
             if (splitCommand.size == 0) continue;
 
-            if (strcmp(splitCommand.list[0], "cd") == 0) {
+            if (strcmp(splitCommand.items[0], "cd") == 0) {
                 cd(&splitCommand, &config);
             }
-            else if (strcmp(splitCommand.list[0], "exit") == 0) {
+            else if (strcmp(splitCommand.items[0], "exit") == 0) {
                 free(config.currentDirectory);
                 exit(EXIT_SUCCESS);
             }
             else {
-                execute_command(splitCommand.list);
+                execute_command(splitCommand.items);
             }
 
             freeList(&splitCommand);

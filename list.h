@@ -8,8 +8,8 @@
 #include <limits.h>
 
 typedef struct List {
-    char** list;
-    int size;
+    char** items;
+    size_t size;
     size_t capacity;
 } List;
 
