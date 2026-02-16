@@ -8,13 +8,15 @@
 #include <string.h>
 #include "list.h"
 
-void addList(const char* string, List* list) {
+#define INITIAL_CAPACITY 8
+
+void add_list(const char* string, List* list) {
     char** temp = list->items;
     if (list->capacity < list->size+2) {
         temp = realloc(list->items, list->capacity*2 * sizeof(char*));
         if (temp == NULL) {
             perror("realloc failed");
-            return;
+            exit(EXIT_FAILURE);
         }
         list->capacity = list->capacity*2;
     }
@@ -28,9 +30,9 @@ void addList(const char* string, List* list) {
     list->size++;
 }
 
-List splitString(char str[PATH_MAX], const char* delim) {
-    List returnList = {NULL, 0, 8};
-    returnList.items = malloc(sizeof(char*)*8);
+List split_string(char *str, const char* delim) {
+    List returnList = {NULL, 0, INITIAL_CAPACITY};
+    returnList.items = malloc(sizeof(char*)*INITIAL_CAPACITY);
 
     if (returnList.items == NULL) {
         perror("malloc failed");
@@ -39,14 +41,14 @@ List splitString(char str[PATH_MAX], const char* delim) {
 
     const char* nextWord = strtok(str, delim);
     while (nextWord != NULL) {
-        addList(nextWord, &returnList);
+        add_list(nextWord, &returnList);
         nextWord = strtok(NULL, delim);
     }
 
     return returnList;
 }
 
-void freeList(List *givenList) {
+void free_list(List *givenList) {
     if (givenList->items != NULL) {
         for (int i = 0; i < givenList->size; i++) {
             free(givenList->items[i]);
@@ -54,4 +56,18 @@ void freeList(List *givenList) {
         free(givenList->items);
         givenList->items = NULL;
     }
+}
+
+void remove_list(List *givenList, const int index) {
+    if (index > givenList->size - 1) {
+        fprintf(stderr, "index not in list.\n");
+        return;
+    }
+    if (index != givenList->size - 1) {
+        for (int i = index; i < givenList->size-1; i++) {
+            givenList->items[i] = givenList->items[i+1];
+        }
+    }
+    givenList->items[givenList->size-1] = NULL;
+    givenList->size--;
 }

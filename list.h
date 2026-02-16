@@ -13,8 +13,9 @@ typedef struct List {
     size_t capacity;
 } List;
 
-void addList(const char* string, List* list);
-List splitString(char str[PATH_MAX], const char* delim);
-void freeList(List *givenList);
+void add_list(const char* string, List* list);
+List split_string(char *str, const char* delim);
+void free_list(List *givenList);
+void remove_list(List *givenList, int index);
 
 #endif //BASICSHELL_LIST_H
