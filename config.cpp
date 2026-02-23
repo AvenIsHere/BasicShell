@@ -7,9 +7,15 @@
 #include <csignal>
 #include <unistd.h>
 #include <vector>
-#include <bits/local_lim.h>
-#include <bits/signum-generic.h>
-#include <linux/limits.h>
+#include <climits>
+
+#ifndef HOST_NAME_MAX
+  #if defined(_POSIX_HOST_NAME_MAX)
+    #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+  #else
+    #define HOST_NAME_MAX 255
+  #endif
+#endif
 
 Config::Config() {
     this->homePath = getenv("HOME");
