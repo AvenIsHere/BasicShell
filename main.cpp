@@ -10,6 +10,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sstream>
+#include <format>
 
 #ifndef HOST_NAME_MAX
   #if defined(_POSIX_HOST_NAME_MAX)
@@ -65,7 +66,7 @@ typedef struct config {
     const char* homePath;
     std::string currentDirectory;
     std::string username;
-    char hostname[HOST_NAME_MAX];
+    std::string hostname;
     std::string pipeDelim;
 }Config;
 
@@ -73,26 +74,38 @@ Config init() {
     const char* homePath = getenv("HOME");
 
     std::string currentDirectory(PATH_MAX, '\0');
-    if (getcwd(&currentDirectory[0], PATH_MAX) == nullptr) {
+    auto currentDirectoryTemp = static_cast<char*>(malloc(PATH_MAX));
+    if (getcwd(currentDirectoryTemp, PATH_MAX) == nullptr) {
         perror("Could not find current directory");
         exit(1);
     }
+    currentDirectory = currentDirectoryTemp;
 
-    std::string username = getenv("USER");
-    if (username.data() == nullptr) {
+    const char* usernameTemp = getenv("USER");
+    std::string username;
+    if (usernameTemp == nullptr) {
         username = "unknown";
     }
+    else {
+        username = usernameTemp;
+    }
 
-    std::string pipeDelim = getenv("PIPE_DELIM");
-    if (pipeDelim.data() == nullptr) {
+    const char* pipeDelimTemp = getenv("PIPE_DELIM");
+    std::string pipeDelim;
+    if (pipeDelimTemp == nullptr) {
         pipeDelim = "|";
+    }
+    else {
+        pipeDelim = pipeDelimTemp;
     }
 
     signal(SIGINT, SIG_IGN);
 
-    Config config = {homePath, currentDirectory, username};
-    gethostname(config.hostname, HOST_NAME_MAX);
-    config.pipeDelim = pipeDelim;
+    char hostname[HOST_NAME_MAX];
+    gethostname(hostname, HOST_NAME_MAX);
+    const std::string hostnameStr = hostname;
+
+    Config config = {homePath, currentDirectory, username, hostnameStr, pipeDelim};
     return config;
 }
 
@@ -115,33 +128,41 @@ void cd(const std::vector<std::string>& givenCommand, Config* config) {
             snprintf(dir, sizeof(dir), "%s", givenCommand[1].c_str());
         }
         if (chdir(dir) == -1) {
-            if (ENOENT == errno) {
-                perror("Directory does not exist");
-            }
-            else {
-                perror("cd failed");
-            }
+            perror("cd failed");
         }
     }
-    getcwd(config->currentDirectory.data(), PATH_MAX);
+    char cwdTemp[PATH_MAX];
+    getcwd(cwdTemp, PATH_MAX);
+    config->currentDirectory = cwdTemp;
 }
 
 std::vector<std::string> split_string(std::string givenString, std::string delim) {
     std::vector<std::string> returnVector;
+    size_t start = 0;
+    size_t end = givenString.find(delim);
+    while (end != std::string::npos) {
+        returnVector.push_back(givenString.substr(start, end - start));
+        start = end + delim.length();
+        end = givenString.find(delim, start);
+    }
+    returnVector.push_back(givenString.substr(start));
+    return returnVector;
+}
+
+std::vector<std::string> split_whitespace(std::string givenString) {
+    std::vector<std::string> returnVector;
     std::stringstream ss(givenString);
     std::string word;
-
     while (ss >> word) {
         returnVector.push_back(word);
     }
-
     return returnVector;
 }
 
 void handle_commands(char *currentCMD, Config *config) {
     const std::vector<std::string> commands = split_string(currentCMD, ";");
     for (int k = 0; k < commands.size(); k++) {
-        std::vector<std::string> splitCommand = split_string(commands[k], " \t\n");
+        std::vector<std::string> splitCommand = split_whitespace(commands[k]);
 
         if (splitCommand.empty()) {
             continue;
@@ -160,15 +181,14 @@ void handle_commands(char *currentCMD, Config *config) {
 }
 
 char* get_input(const Config *config) {
-
-    char prompt[PATH_MAX + HOST_NAME_MAX + 32];
+    std::string prompt;
     if (config->homePath != nullptr && starts_with(config->currentDirectory, config->homePath)) {
-        snprintf(prompt, sizeof(prompt), "%s@%s:~%s$ ", config->username.c_str(), config->hostname, config->currentDirectory.c_str() + strlen(config->homePath));
+        prompt = std::format("{}@{}:~{}$ ", config->username, config->hostname, config->currentDirectory.c_str() + strlen(config->homePath));
     }
     else {
-        snprintf(prompt, sizeof(prompt), "%s@%s:%s$ ", config->username.c_str(), config->hostname, config->currentDirectory.c_str());
+        prompt = std::format("{}@{}:{}$ ", config->username, config->hostname, config->currentDirectory);
     }
-    char *currentCMD = readline(prompt);
+    char* currentCMD = readline(prompt.c_str());
 
     if (currentCMD == nullptr) {
         return nullptr;
