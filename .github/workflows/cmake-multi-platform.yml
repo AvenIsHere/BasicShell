@@ -27,11 +27,11 @@ jobs:
         c_compiler: [gcc, clang]
         include:
           - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
+            c_compiler: gcc-13
+            cpp_compiler: g++-13
           - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+            c_compiler: clang-17
+            cpp_compiler: clang++-17
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
@@ -61,6 +61,8 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_CXX_STANDARD=20
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
     - name: Build
