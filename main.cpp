@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <climits>
 #include <sys/wait.h>
-#include <cerrno>
 #include <vector>
 #include <string>
 #include <readline/readline.h>
