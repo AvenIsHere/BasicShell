@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <vector>
 #include <climits>
+#include <format>
+#include <iostream>
 
 #ifndef HOST_NAME_MAX
   #if defined(_POSIX_HOST_NAME_MAX)
@@ -60,16 +62,16 @@ void Config::cd(const std::vector<std::string> &givenCommand) {
             chdir(homePath);
         }
     } else if (givenCommand.size() > 2) {
-        fprintf(stderr, "Too many arguments.\n");
+        std::cerr << "Too many arguments." << std::endl;
     } else {
         errno = 0;
-        char dir[PATH_MAX];
+        std::string dir;
         if (givenCommand[1][0] == '~' && homePath != nullptr) {
-            snprintf(dir, sizeof(dir), "%s%s", homePath, givenCommand[1].c_str() + 1);
+            dir = std::format("{}{}", homePath, givenCommand[1].c_str() + 1);
         } else {
-            snprintf(dir, sizeof(dir), "%s", givenCommand[1].c_str());
+            dir = givenCommand[1];
         }
-        if (chdir(dir) == -1) {
+        if (chdir(dir.c_str()) == -1) {
             perror("cd failed");
         }
     }
