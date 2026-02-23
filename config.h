@@ -14,7 +14,7 @@ public:
         currentDirectory = current_directory;
     }
 
-    [[nodiscard]] const char *get_home_path() const {
+    [[nodiscard]] std::string get_home_path() const {
         return homePath;
     }
 
@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    const char *homePath;
+    std::string homePath;
     std::string currentDirectory;
     std::string username;
     std::string hostname;

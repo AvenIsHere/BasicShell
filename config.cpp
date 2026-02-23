@@ -20,8 +20,8 @@
 #endif
 
 Config::Config() {
-    this->homePath = getenv("HOME");
-
+    const char* homePathTemp = getenv("HOME");
+    this->homePath = homePathTemp;
 
     char currentDirectoryTemp[PATH_MAX];
     if (getcwd(currentDirectoryTemp, PATH_MAX) == nullptr) {
@@ -58,15 +58,15 @@ Config::Config() {
 
 void Config::cd(const std::vector<std::string> &givenCommand) {
     if (givenCommand.size() < 2) {
-        if (homePath != nullptr) {
-            chdir(homePath);
+        if (homePath.c_str() != nullptr) {
+            chdir(homePath.c_str());
         }
     } else if (givenCommand.size() > 2) {
         std::cerr << "Too many arguments." << std::endl;
     } else {
         errno = 0;
         std::string dir;
-        if (givenCommand[1][0] == '~' && homePath != nullptr) {
+        if (givenCommand[1][0] == '~' && homePath.c_str() != nullptr) {
             dir = std::format("{}{}", homePath, givenCommand[1].c_str() + 1);
         } else {
             dir = givenCommand[1];
