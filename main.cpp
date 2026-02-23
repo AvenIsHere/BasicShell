@@ -11,6 +11,7 @@
 #include <readline/history.h>
 #include <sstream>
 #include <format>
+#include <iostream>
 
 #include "config.h"
 
@@ -45,7 +46,7 @@ void execute_command(const std::vector<std::string> &args) {
     int status;
     waitpid(process, &status, 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "Process failed with error code %i.\n", WEXITSTATUS(status));
+        std::cerr << "Process failed with error code" << WEXITSTATUS(status) << "." << std::endl;
     }
 }
 
@@ -80,9 +81,9 @@ void handle_commands(const char *currentCMD, Config *config) {
             continue;
         }
 
-        if (strcmp(splitCommand[0].c_str(), "cd") == 0) {
+        if (splitCommand[0] == "cd") {
             config->cd(splitCommand);
-        } else if (strcmp(splitCommand[0].c_str(), "exit") == 0) {
+        } else if (splitCommand[0] == "exit") {
             exit(EXIT_SUCCESS);
         } else {
             execute_command(splitCommand);
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
         char *currentCMD = get_input(&config);
 
         if (currentCMD == nullptr) {
-            printf("\n");
+            std::cout << std::endl;
             break;
         }
 
