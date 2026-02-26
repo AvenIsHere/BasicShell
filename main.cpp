@@ -72,7 +72,7 @@ std::vector<std::string> split_whitespace(const std::string &given_string) {
     return returnVector;
 }
 
-void handle_commands(const char *currentCMD, Config *config) {
+bool handle_commands(const char *currentCMD, Config *config) {
     for (const std::vector<std::string> commands = split_string(currentCMD, ";"); const auto &command: commands) {
         std::vector<std::string> split_command = split_whitespace(command);
 
@@ -83,21 +83,24 @@ void handle_commands(const char *currentCMD, Config *config) {
         if (split_command[0] == "cd") {
             config->cd(split_command);
         } else if (split_command[0] == "exit") {
-            exit(EXIT_SUCCESS);
+            return true;
         } else {
             execute_command(split_command);
         }
     }
+    return false;
 }
 
 char *get_input(const Config *config) {
     std::string prompt;
-    if (config->get_home_path().c_str() != nullptr && config->get_current_directory().starts_with(config->get_home_path())) {
+    std::string home_path = config->get_home_path();
+    std::string current_dir = config->get_current_directory();
+    if (!home_path.empty() && current_dir.starts_with(home_path)) {
         prompt = std::format("{}@{}:~{}$ ", config->get_username(), config->get_hostname(),
-                             config->get_current_directory().c_str() + strlen(config->get_home_path().c_str()));
+                             current_dir.c_str() + home_path.length());
     } else {
         prompt = std::format("{}@{}:{}$ ", config->get_username(), config->get_hostname(),
-                             config->get_current_directory());
+                             current_dir);
     }
     char *current_cmd = readline(prompt.c_str());
 
@@ -107,6 +110,7 @@ char *get_input(const Config *config) {
 
     if (*current_cmd) {
         add_history(current_cmd);
+        stifle_history(1000);
     }
     return current_cmd;
 }
@@ -124,7 +128,10 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        handle_commands(current_cmd, &config);
+        if (handle_commands(current_cmd, &config)) {
+            free(current_cmd);
+            break;
+        }
 
         free(current_cmd);
     }

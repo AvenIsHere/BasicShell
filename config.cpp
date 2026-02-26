@@ -31,13 +31,13 @@ Config::Config() {
     this->current_directory = currentDirectoryTemp;
 
     const char *usernameTemp = getenv("USER");
-    std::string username;
+    std::string usernameStr;
     if (usernameTemp == nullptr) {
-        username = "unknown";
+        usernameStr = "unknown";
     } else {
-        username = usernameTemp;
+        usernameStr = usernameTemp;
     }
-    this->username = username;
+    this->username = usernameStr;
 
     const char *pipeDelimTemp = getenv("PIPE_DELIM");
     std::string pipeDelim;
@@ -50,9 +50,9 @@ Config::Config() {
 
     signal(SIGINT, SIG_IGN);
 
-    char hostname[HOST_NAME_MAX];
-    gethostname(hostname, HOST_NAME_MAX);
-    const std::string hostnameStr = hostname;
+    char hostnameTemp[HOST_NAME_MAX];
+    gethostname(hostnameTemp, HOST_NAME_MAX);
+    const std::string hostnameStr = hostnameTemp;
     this->hostname = hostnameStr;
 }
 
