@@ -2,8 +2,8 @@
 // Created by aven on 23/02/2026.
 //
 
-#ifndef BASICSHELL_CONFIG_H
-#define BASICSHELL_CONFIG_H
+#ifndef BSHELL_CONFIG_H
+#define BSHELL_CONFIG_H
 #include <string>
 #include <vector>
 
@@ -48,4 +48,4 @@ public:
 };
 
 
-#endif //BASICSHELL_CONFIG_H
+#endif //BSHELL_CONFIG_H

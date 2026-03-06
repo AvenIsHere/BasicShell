@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <cstdio>
-#include <cstring>
 #include <unistd.h>
 #include <climits>
 #include <sys/wait.h>
@@ -93,7 +92,7 @@ bool handle_commands(const char *currentCMD, Config *config) {
 
 char *get_input(const Config *config) {
     std::string prompt;
-    std::string home_path = config->get_home_path();
+    const std::string home_path = config->get_home_path();
     std::string current_dir = config->get_current_directory();
     if (!home_path.empty() && current_dir.starts_with(home_path)) {
         prompt = std::format("{}@{}:~{}$ ", config->get_username(), config->get_hostname(),

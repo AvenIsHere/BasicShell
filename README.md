@@ -1,4 +1,4 @@
-## BasicShell
+## BShell
 
 This is a shell program written in C++ for POSIX-compliant operating systems.
 
