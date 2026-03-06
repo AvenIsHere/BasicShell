@@ -44,9 +44,6 @@ void execute_command(const std::vector<std::string> &args) {
     }
     int status;
     waitpid(process, &status, 0);
-    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-        std::cerr << "Process failed with error code" << WEXITSTATUS(status) << "." << std::endl;
-    }
 }
 
 std::vector<std::string> split_string(const std::string &given_string, const std::string &delim) {
@@ -105,7 +102,7 @@ std::unique_ptr<char, void(*)(void*)> get_input(const Config *config) {
     std::unique_ptr<char, void(*)(void*)> current_cmd(readline(prompt.c_str()), std::free);
 
     if (current_cmd == nullptr) {
-        return {std::unique_ptr<char, void(*)(void*)>(nullptr, free)};
+        return {nullptr, std::free};
     }
 
     if (*current_cmd) {
