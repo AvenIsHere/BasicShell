@@ -16,6 +16,7 @@ private:
     std::string username;
     std::string hostname;
     std::string pipe_delim;
+    std::string path_str;
     std::unordered_set<std::string> commands;
 
 public:
@@ -50,7 +51,8 @@ public:
     Config();
 
     void build_commands();
-    void cd(const std::vector<std::string> &givenCommand);
+    static void export_env(const std::vector<std::string> &given_command);
+    void cd(const std::vector<std::string> &given_command);
 };
 
 

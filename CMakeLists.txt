@@ -8,7 +8,9 @@ find_library(READLINE_LIBRARY NAMES readline REQUIRED)
 
 add_executable(BShell main.cpp
         config.cpp
-        config.h)
+        config.h
+        parser.cpp
+        parser.h)
 
 target_include_directories(BShell PRIVATE ${READLINE_INCLUDE_DIR})
 target_link_libraries(BShell PRIVATE ${READLINE_LIBRARY})

@@ -11,9 +11,9 @@
 #include <format>
 #include <iostream>
 #include <memory>
-#include <regex>
 
 #include "config.h"
+#include "parser.h"
 
 #ifndef HOST_NAME_MAX
 #if defined(_POSIX_HOST_NAME_MAX)
@@ -36,7 +36,7 @@ void execute_command(const std::vector<std::string> &args) {
 
         std::vector<char *> argsToPass;
         for (const auto &arg: args) {
-            argsToPass.push_back(const_cast<char *>(arg.data()));
+            argsToPass.push_back(const_cast<char *>(arg.c_str()));
         }
         argsToPass.push_back(nullptr);
 
@@ -48,62 +48,10 @@ void execute_command(const std::vector<std::string> &args) {
     waitpid(process, &status, 0);
 }
 
-std::vector<std::string> tokenise(const std::string& str, const char& delim) {
-    std::vector<std::string> tokens;
-    size_t start = 0;
-    size_t end = str.find(delim);
-
-    while (end != std::string::npos) {
-        if (std::string token = str.substr(start, end - start); !token.empty()) tokens.push_back(token);
-        start = end + 1;
-        end = str.find(delim, start);
-    }
-
-    if (std::string final_token = str.substr(start); !final_token.empty()) tokens.push_back(final_token);
-
-    return tokens;
-}
-
-std::vector<std::string> split_to_args(const std::string& command) {
-    std::vector<std::string> args;
-    std::string current;
-    bool in_quotes = false;
-
-    for (int i = 0; i < command.length(); i++) {
-        char c = command[i];
-
-        if (c == '\\') {
-            if (i + 1 < command.length()) {
-                current += command[++i];
-            }
-            continue;
-        }
-
-        if (c == '"') {
-            in_quotes = !in_quotes;
-            continue;
-        }
-
-        if (std::isspace(c) && !in_quotes) {
-            if (!current.empty()) {
-                args.push_back(current);
-                current.clear();
-            }
-            continue;
-        }
-        current += c;
-    }
-    if (!current.empty()) {
-        args.push_back(current);
-    }
-
-    return args;
-}
-
 bool handle_commands(const std::unique_ptr<char, void(*)(void*)> &currentCMD) {
     if (!currentCMD) return false;
-    for (const std::vector<std::string> commands = tokenise(currentCMD.get(), ';'); const auto &command: commands) {
-        std::vector<std::string> split_command = split_to_args(command);
+    for (const std::vector<std::string> commands = Parser::tokenise(currentCMD.get(), ';'); const auto &command: commands) {
+        std::vector<std::string> split_command = Parser::split_to_args(command);
 
         if (split_command.empty()) {
             continue;
@@ -113,6 +61,8 @@ bool handle_commands(const std::unique_ptr<char, void(*)(void*)> &currentCMD) {
             config.cd(split_command);
         } else if (split_command[0] == "exit") {
             return true;
+        } else if (split_command[0] == "export") {
+            Config::export_env(split_command);
         } else {
             execute_command(split_command);
         }
@@ -168,7 +118,6 @@ std::unique_ptr<char, void(*)(void*)> get_input() {
 
     if (*current_cmd) {
         add_history(current_cmd.get());
-        stifle_history(1000);
     }
     return current_cmd;
 }
@@ -178,9 +127,9 @@ int main(int argc, char *argv[]) {
     rl_completer_quote_characters = "\"\'";
     rl_filename_quote_characters = " \t\n\\\"'@<>=|&()";
     rl_attempted_completion_function = complete;
+    stifle_history(1000);
 
-    while (true) {
-        // keep the shell running until the exit command is entered
+    while (true) { // keep the shell running until the exit command is entered
 
         std::unique_ptr<char, void(*)(void*)> current_cmd = get_input();
 

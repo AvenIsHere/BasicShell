@@ -22,68 +22,83 @@
 #endif
 
 Config::Config() {
-    const char* homePathTemp = getenv("HOME");
-    this->home_path = homePathTemp;
+    this->home_path = getenv("HOME");
 
-    char currentDirectoryTemp[PATH_MAX];
-    if (getcwd(currentDirectoryTemp, PATH_MAX) == nullptr) {
+    char current_directory_temp[PATH_MAX];
+    if (getcwd(current_directory_temp, PATH_MAX) == nullptr) {
         perror("Could not find current directory");
         exit(1);
     }
-    this->current_directory = currentDirectoryTemp;
+    this->current_directory = current_directory_temp;
 
-    const char* usernameTemp = getenv("USER");
-    std::string usernameStr;
-    if (usernameTemp == nullptr) {
-        usernameStr = "unknown";
+    const char* username_temp = getenv("USER");
+    std::string username_str;
+    if (username_temp == nullptr) {
+        username_str = "unknown";
     } else {
-        usernameStr = usernameTemp;
+        username_str = username_temp;
     }
-    this->username = usernameStr;
+    this->username = username_str;
 
-    const char* pipeDelimTemp = getenv("PIPE_DELIM");
-    std::string pipeDelim;
-    if (pipeDelimTemp == nullptr) {
-        pipeDelim = "|";
+    const char* pipe_delim_temp = getenv("PIPE_DELIM");
+    std::string pipe_delim_str;
+    if (pipe_delim_temp == nullptr) {
+        pipe_delim_str = "|";
     } else {
-        pipeDelim = pipeDelimTemp;
+        pipe_delim_str = pipe_delim_temp;
     }
-    this->pipe_delim = pipeDelim;
+    this->pipe_delim = pipe_delim_str;
 
     signal(SIGINT, SIG_IGN);
 
-    char hostnameTemp[HOST_NAME_MAX];
-    gethostname(hostnameTemp, HOST_NAME_MAX);
-    const std::string hostnameStr = hostnameTemp;
-    this->hostname = hostnameStr;
+    char hostname_temp[HOST_NAME_MAX];
+    gethostname(hostname_temp, HOST_NAME_MAX);
+    const std::string hostname_str = hostname_temp;
+    this->hostname = hostname_str;
 
     build_commands();
 }
 
-void Config::cd(const std::vector<std::string> &givenCommand) {
-    if (givenCommand.size() < 2) {
-        if (home_path.c_str() != nullptr) {
+void Config::cd(const std::vector<std::string> &given_command) {
+    if (given_command.size() < 2) {
+        if (!home_path.empty()) {
             chdir(home_path.c_str());
         }
-    } else if (givenCommand.size() > 2) {
+    } else if (given_command.size() > 2) {
         std::cerr << "Too many arguments." << std::endl;
     } else {
         errno = 0;
         std::string dir;
-        if (givenCommand[1][0] == '~' && home_path.c_str() != nullptr) {
-            dir = std::format("{}{}", home_path, givenCommand[1].c_str() + 1);
+        if (given_command[1][0] == '~' && home_path.c_str() != nullptr) {
+            dir = std::format("{}{}", home_path, given_command[1].c_str() + 1);
         } else {
-            dir = givenCommand[1];
+            dir = given_command[1];
         }
         if (chdir(dir.c_str()) == -1) {
             perror("cd failed");
         }
     }
-    char cwdTemp[PATH_MAX];
-    getcwd(cwdTemp, PATH_MAX);
-    current_directory = cwdTemp;
+    char cwd_temp[PATH_MAX];
+    getcwd(cwd_temp, PATH_MAX);
+    current_directory = cwd_temp;
+}
+extern char** environ;
 
-    build_commands();
+void Config::export_env(const std::vector<std::string> &given_command) {
+    if (given_command.size() < 2) {
+        for (char** env = environ; *env != 0; env++) {
+            const char* env_i = *env;
+            std::cout << env_i << std::endl;
+        }
+    }
+    for (int i=1; i < given_command.size(); i++) {
+        const std::string& entry = given_command[i];
+        if (const size_t pos = entry.find('='); pos != std::string::npos) {
+            std::string key = entry.substr(0, pos);
+            std::string value = entry.substr(pos + 1);
+            setenv(key.c_str(), value.c_str(), 1);
+        }
+    }
 }
 
 void Config::build_commands() {
@@ -91,6 +106,11 @@ void Config::build_commands() {
     const char* path_env = getenv("PATH");
     if (!path_env) return;
 
+    if (path_env == path_str) {
+        return;
+    }
+
+    path_str = path_env;
     std::stringstream ss(path_env);
     std::string dir_path;
     while (std::getline(ss, dir_path, ':')) {
