@@ -46,20 +46,12 @@ jobs:
 
     - name: Configure CMake
       run: |
-        if [ "$RUNNER_OS" == "macOS" ]; then
-          READLINE_PATH=$(brew --prefix readline)
-          EXTRA_FLAGS="-DCMAKE_PREFIX_PATH=$READLINE_PATH -DCMAKE_IGNORE_PATH=/usr/include"
-        else
-          EXTRA_FLAGS = ""
-        fi
-        
         cmake -B ${{ steps.strings.outputs.build-output-dir }} \
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
         -DCMAKE_CXX_STANDARD=20 \
         -DCMAKE_CXX_STANDARD_REQUIRED=ON \
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        $EXTRA_FLAGS \
         -S ${{ github.workspace }}
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
