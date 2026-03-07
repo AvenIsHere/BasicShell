@@ -3,7 +3,7 @@ project(BShell CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_library(READLINE_LIBRARY NAMES readline)
+find_library(READLINE_LIBRARY NAMES readline REQUIRED)
 
 add_executable(BShell main.cpp
         config.cpp
