@@ -44,13 +44,20 @@ jobs:
           brew install readline
         fi
 
-    - name: Build
+    - name: Configure CMake
       run: |
         if [ "$RUNNER_OS" == "macOS" ]; then
-          g++ main.cpp -I$(brew --prefix readline)/include -L$(brew --prefix readline)/lib -lreadline
-        else
-          g++ main.cpp -lreadline
+          export CMAKE_PREFIX_PATH=$(brew --prefix readline)
         fi
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+        -S ${{ github.workspace }}
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}

@@ -3,14 +3,12 @@ project(BShell CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-if(APPLE)
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/readline" "/opt/homebrew/opt/readline")
-endif()
-
+find_path(READLINE_INCLUDE_DIR NAMES readline/readline.h REQUIRED)
 find_library(READLINE_LIBRARY NAMES readline REQUIRED)
 
 add_executable(BShell main.cpp
         config.cpp
         config.h)
 
+target_include_directories(BShell PRIVATE ${READLINE_INCLUDE_DIR})
 target_link_libraries(BShell PRIVATE ${READLINE_LIBRARY})
