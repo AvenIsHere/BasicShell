@@ -85,7 +85,7 @@ char* command_generator(const char* text, const int state) {
                 matches.push_back(cmd);
             }
         }
-        std::sort(matches.begin(), matches.end());
+        std::ranges::sort(matches);
     }
     if (match_index < matches.size()) {
         return strdup(matches[match_index++].c_str());
