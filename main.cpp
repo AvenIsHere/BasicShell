@@ -51,7 +51,7 @@ void execute_command(const std::vector<std::string> &args) {
 
 bool handle_commands(const std::unique_ptr<char, void(*)(void*)> &currentCMD) {
     if (!currentCMD) return false;
-    for (const std::vector<std::string> commands = Parser::tokenise(currentCMD.get(), ';'); const auto &command: commands) {
+    for (const std::vector<std::string> commands = Parser::tokenise(currentCMD.get(), {';', '\n'}); const auto &command: commands) {
         std::vector<std::string> split_command = Parser::split_to_args(command);
 
         if (split_command.empty()) {

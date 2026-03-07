@@ -11,7 +11,7 @@
 class Parser {
 public:
     static std::vector<std::string> split_to_args(const std::string& command);
-    static std::vector<std::string> tokenise(const std::string& str, const char& delim);
+    static std::vector<std::string> tokenise(const std::string &str, const std::vector<char> &delims);
 };
 
 
