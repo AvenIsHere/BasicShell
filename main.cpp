@@ -51,21 +51,21 @@ void execute_command(const std::vector<std::string> &args) {
 
 bool handle_commands(const std::unique_ptr<char, void(*)(void*)> &currentCMD) {
     if (!currentCMD) return false;
-    for (const std::vector<std::string> commands = Parser::tokenise(currentCMD.get(), {';', '\n'}); const auto &command: commands) {
-        std::vector<std::string> split_command = Parser::split_to_args(command);
+    Parser parse((currentCMD.get()));
+    for (const std::vector<std::vector<std::string>> commands = parse.tokenise(); const auto &command: commands) {
 
-        if (split_command.empty()) {
+        if (command.empty()) {
             continue;
         }
 
-        if (split_command[0] == "cd") {
-            config.cd(split_command);
-        } else if (split_command[0] == "exit") {
+        if (command[0] == "cd") {
+            config.cd(command);
+        } else if (command[0] == "exit") {
             return true;
-        } else if (split_command[0] == "export") {
-            Config::export_env(split_command);
+        } else if (command[0] == "export") {
+            Config::export_env(command);
         } else {
-            execute_command(split_command);
+            execute_command(command);
         }
     }
     return false;

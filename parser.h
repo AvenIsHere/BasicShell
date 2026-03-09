@@ -4,14 +4,26 @@
 
 #ifndef BSHELL_PARSER_H
 #define BSHELL_PARSER_H
+#include <stack>
 #include <string>
 #include <vector>
 
 
 class Parser {
+    enum State {
+        NORMAL,
+        QUOTE,
+        ESCAPE,
+        ENV_VAR,
+        SINGLE_QUOTE,
+    };
+    State state;
+    std::stack<State> stack;
+    std::string input;
+
 public:
-    static std::vector<std::string> split_to_args(const std::string& command);
-    static std::vector<std::string> tokenise(const std::string &str, const std::vector<char> &delims);
+    explicit Parser(const std::string& input);
+    std::vector<std::vector<std::string>> tokenise();
 };
 
 
