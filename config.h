@@ -10,49 +10,48 @@
 
 
 class Config {
-private:
-    std::string home_path;
-    std::string current_directory;
-    std::string username;
-    std::string hostname;
-    std::string pipe_delim;
-    std::string path_str;
-    std::unordered_set<std::string> commands;
+    static std::string home_path;
+    static std::string current_directory;
+    static std::string username;
+    static std::string hostname;
+    static std::string pipe_delim;
+    static std::string path_str;
+    static std::unordered_set<std::string> commands;
 
 public:
-    void set_current_directory(const std::string &given_current_directory) {
-        this->current_directory = given_current_directory;
+    static void set_current_directory(const std::string &given_current_directory) {
+        Config::current_directory = given_current_directory;
     }
 
-    [[nodiscard]] std::string get_home_path() const {
+    static std::string get_home_path() {
         return home_path;
     }
 
-    [[nodiscard]] std::string get_current_directory() const {
+    static std::string get_current_directory() {
         return current_directory;
     }
 
-    [[nodiscard]] std::string get_username() const {
+    static std::string get_username() {
         return username;
     }
 
-    [[nodiscard]] std::string get_hostname() const {
+    static std::string get_hostname() {
         return hostname;
     }
 
-    [[nodiscard]] std::string get_pipe_delim() const {
+    static std::string get_pipe_delim() {
         return pipe_delim;
     }
 
-    [[nodiscard]] std::unordered_set<std::string> get_commands() const {
+    static std::unordered_set<std::string> get_commands() {
         return commands;
     }
 
-    Config();
+    static void init();
 
-    void build_commands();
+    static void build_commands();
     static void export_env(const std::vector<std::string> &given_command);
-    void cd(const std::vector<std::string> &given_command);
+    static void cd(const std::vector<std::string> &given_command);
 };
 
 

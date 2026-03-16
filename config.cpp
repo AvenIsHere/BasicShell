@@ -21,15 +21,23 @@
   #endif
 #endif
 
-Config::Config() {
-    this->home_path = getenv("HOME");
+std::string Config::home_path;
+std::string Config::username;
+std::string Config::current_directory;
+std::string Config::hostname;
+std::string Config::pipe_delim;
+std::string Config::path_str;
+std::unordered_set<std::string> Config::commands;
+
+void Config::init() {
+    home_path = getenv("HOME");
 
     char current_directory_temp[PATH_MAX];
     if (getcwd(current_directory_temp, PATH_MAX) == nullptr) {
         perror("Could not find current directory");
         exit(1);
     }
-    this->current_directory = current_directory_temp;
+    current_directory = current_directory_temp;
 
     const char* username_temp = getenv("USER");
     std::string username_str;
@@ -38,7 +46,7 @@ Config::Config() {
     } else {
         username_str = username_temp;
     }
-    this->username = username_str;
+    username = username_str;
 
     const char* pipe_delim_temp = getenv("PIPE_DELIM");
     std::string pipe_delim_str;
@@ -47,14 +55,14 @@ Config::Config() {
     } else {
         pipe_delim_str = pipe_delim_temp;
     }
-    this->pipe_delim = pipe_delim_str;
+    pipe_delim = pipe_delim_str;
 
     signal(SIGINT, SIG_IGN);
 
     char hostname_temp[HOST_NAME_MAX];
     gethostname(hostname_temp, HOST_NAME_MAX);
     const std::string hostname_str = hostname_temp;
-    this->hostname = hostname_str;
+    hostname = hostname_str;
 
     build_commands();
 }
@@ -82,11 +90,10 @@ void Config::cd(const std::vector<std::string> &given_command) {
     getcwd(cwd_temp, PATH_MAX);
     current_directory = cwd_temp;
 }
-extern char** environ;
 
 void Config::export_env(const std::vector<std::string> &given_command) {
     if (given_command.size() < 2) {
-        for (char** env = environ; *env != 0; env++) {
+        for (char** env = environ; *env != nullptr; env++) {
             const char* env_i = *env;
             std::cout << env_i << std::endl;
         }

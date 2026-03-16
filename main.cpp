@@ -24,8 +24,6 @@
 #endif
 #endif
 
-Config config{};
-
 void execute_command(const std::vector<std::string> &args) {
     const pid_t process = fork();
     if (process == -1) {
@@ -52,16 +50,22 @@ void execute_command(const std::vector<std::string> &args) {
 bool handle_commands(const std::unique_ptr<char, void(*)(void*)> &currentCMD) {
     if (!currentCMD) return false;
     Parser parse((currentCMD.get()));
-    for (const std::vector<std::vector<std::string>> commands = parse.tokenise(); const auto &command: commands) {
+    auto commands = parse.tokenise();
+
+    if (std::ranges::any_of(commands, [](const auto& cmd) {
+        return !cmd.empty() && cmd[0] == "exit";
+    })) {
+        return true;
+    }
+
+    for (const auto &command: commands) {
 
         if (command.empty()) {
             continue;
         }
 
         if (command[0] == "cd") {
-            config.cd(command);
-        } else if (command[0] == "exit") {
-            return true;
+            Config::cd(command);
         } else if (command[0] == "export") {
             Config::export_env(command);
         } else {
@@ -80,7 +84,7 @@ char* command_generator(const char* text, const int state) {
         match_index = 0;
         const std::string prefix(text);
 
-        for (const auto& cmd : config.get_commands()) {
+        for (const auto& cmd : Config::get_commands()) {
             if (cmd.size() >= prefix.size() && cmd.compare(0, prefix.size(), prefix) == 0) {
                 matches.push_back(cmd);
             }
@@ -102,13 +106,13 @@ char** complete(const char* text, const int start, int end) {
 
 std::unique_ptr<char, void(*)(void*)> get_input() {
     std::string prompt;
-    const std::string home_path = config.get_home_path();
-    std::string current_dir = config.get_current_directory();
+    const std::string home_path = Config::get_home_path();
+    std::string current_dir = Config::get_current_directory();
     if (!home_path.empty() && current_dir.starts_with(home_path)) {
-        prompt = std::format("{}@{}:~{}$ ", config.get_username(), config.get_hostname(),
+        prompt = std::format("{}@{}:~{}$ ", Config::get_username(), Config::get_hostname(),
                              current_dir.c_str() + home_path.length());
     } else {
-        prompt = std::format("{}@{}:{}$ ", config.get_username(), config.get_hostname(),
+        prompt = std::format("{}@{}:{}$ ", Config::get_username(), Config::get_hostname(),
                              current_dir);
     }
     std::unique_ptr<char, void(*)(void*)> current_cmd(readline(prompt.c_str()), std::free);
@@ -129,6 +133,8 @@ int main(int argc, char *argv[]) {
     rl_filename_quote_characters = " \t\n\\\"'@<>=|&()";
     rl_attempted_completion_function = complete;
     stifle_history(1000);
+
+    Config::init();
 
     while (true) { // keep the shell running until the exit command is entered
 
