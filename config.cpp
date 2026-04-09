@@ -33,6 +33,11 @@
   #endif
 #endif
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#endif
+
 std::string Config::home_path;
 std::string Config::username;
 std::string Config::current_directory;
